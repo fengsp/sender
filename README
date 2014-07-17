@@ -1,6 +1,6 @@
 Sender
 
-    Sender is a Python package for SMTP mail sending.
+    Sender is a tiny Python module for SMTP mail sending.
 
     The purpose is making sending SMTP mail simple and easy.  Using builtin
     module to send mail is a little verbose, things shouldn't be this way.
