@@ -11,7 +11,7 @@ Sender is easy
 
     mail = Mail()
 
-    msg = Message("title", sender="from@gmail.com")
+    msg = Message("title", fromaddr="from@gmail.com")
     msg.body = "content"
 
     mail.send(msg)
