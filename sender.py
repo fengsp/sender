@@ -93,6 +93,7 @@ class Mail(object):
             for message in messages:
                 if self.fromaddr and not message.fromaddr:
                     message.fromaddr = self.fromaddr
+                message.validate()
                 c.send(message)
     
     def send_message(self, *args, **kwargs):
@@ -142,9 +143,36 @@ class Connection(object):
 
         :param message: one message instance.
         """
-        message.validate()
         self.server.sendmail(message.fromaddr, message.to_addrs, str(message),
                              message.mail_options, message.rcpt_options)
+
+
+class AddressAttribute(object):
+    """Makes an address attribute forward to the addrs"""
+
+    def __init__(self, name):
+        self.__name__ = name
+
+    def __get__(self, obj, type=None):
+        if obj is None:
+            return self
+        return obj.addrs[self.__name__]
+
+    def __set__(self, obj, value):
+        if value is None:
+            obj.addrs[self.__name__] = value
+            return
+
+        if self.__name__ in ('to', 'cc', 'bcc'):
+            if isinstance(value, string_types):
+                value = [value]
+        if self.__name__ == 'fromaddr':
+            value = process_address(parse_fromaddr(value), obj.charset)
+        elif self.__name__ in ('to', 'cc', 'bcc'):
+            value = set(process_addresses(value, obj.charset))
+        elif self.__name__ == 'reply_to':
+            value = process_address(value, obj.charset)
+        obj.addrs[self.__name__] = value
 
 
 class Message(object):
@@ -167,20 +195,21 @@ class Message(object):
     :param rcpt_options: a list of ESMTP options used in RCPT commands
     """
 
+    to = AddressAttribute('to')
+    fromaddr = AddressAttribute('fromaddr')
+    cc = AddressAttribute('cc')
+    bcc = AddressAttribute('bcc')
+    reply_to = AddressAttribute('reply_to')
+
     def __init__(self, subject=None, to=None, body=None, html=None,
                  fromaddr=None, cc=None, bcc=None, attachments=None,
                  reply_to=None, date=None, charset='utf-8',
                  extra_headers=None, mail_options=None, rcpt_options=None):
         self.message_id = make_msgid()
         self.subject = subject
-        self.to = AddressAttribute('to')
         self.body = body
         self.html = html
-        self.fromaddr = AddressAttribute('fromaddr')
-        self.cc = AddressAttribute('cc')
-        self.bcc = AddressAttribute('bcc')
-        self.attachments = attachments
-        self.reply_to = AddressAttribute('reply_to')
+        self.attachments = attachments or []
         self.date = date
         self.charset = charset
         self.extra_headers = extra_headers
@@ -188,9 +217,9 @@ class Message(object):
         self.rcpt_options = rcpt_options or []
         # used for actual addresses store
         self.addrs = dict()
-        # set addresses
+        # set address
+        self.to = to
         self.fromaddr = fromaddr
-        self.to = to or []
         self.cc = cc or []
         self.bcc = bcc or []
         self.reply_to = reply_to
@@ -248,17 +277,19 @@ class Message(object):
             f = MIMEBase(*attachment.content_type.split('/'))
             f.set_payload(attachment.data)
             encode_base64(f)
-            if attachment.filename:
+            if attachment.filename is None:
+                filename = str(None)
+            else:
                 filename = force_text(attachment.filename, self.charset)
-                try:
-                    filename = filename.encode('ascii')
-                except UnicodeEncodeError:
-                    filename = filename.encode('utf8')
-                    f.add_header('Content-Disposition', attachment.disposition,
-                                 filename=('UTF8', '', filename))
-                else:
-                    f.add_header('Content-Disposition', '%s;filename=%s' %
-                                 (attachment.disposition, filename))
+            try:
+                filename = filename.encode('ascii')
+            except UnicodeEncodeError:
+                filename = filename.encode('utf-8')
+                f.add_header('Content-Disposition', attachment.disposition,
+                             filename=('utf-8', '', filename))
+            else:
+                f.add_header('Content-Disposition', '%s;filename=%s' %
+                             (attachment.disposition, filename))
             for key, value in attachment.headers.items():
                 f.add_header(key, value)
             msg.attach(f)
@@ -274,7 +305,7 @@ class Message(object):
             attachments = iter(attachment_or_attachments)
         except TypeError:
             attachments = [attachment_or_attachments]
-            self.attachments.extend(attachments)
+        self.attachments.extend(attachments)
     
     def attach_attachment(self, *args, **kwargs):
         """Shortcut for attach.
@@ -299,34 +330,6 @@ class Attachment(object):
         self.data = data
         self.disposition = disposition
         self.headers = headers
-
-
-class AddressAttribute(object):
-    """Makes an address attribute forward to the addrs"""
-
-    def __init__(self, name):
-        self.__name__ = name
-
-    def __get__(self, obj, type=None):
-        if obj is None:
-            return self
-        return obj.addrs[self.__name__]
-
-    def __set__(self, obj, value):
-        for c in '\r\n':
-            if c in value:
-                raise SenderError('newline is not allowed in %s' \
-                    % self.__name__)
-        if self.__name__ in ('to', 'cc', 'bcc'):
-            if isinstance(value, string_types):
-                value = [value]
-        if self.__name__ == 'fromaddr':
-            value = process_address(parse_fromaddr(value), obj.charset)
-        elif self.__name__ in ('to', 'cc', 'bcc'):
-            value = set(process_addresses(value, obj.charset))
-        elif self.__name__ == 'reply_to':
-            value = process_address(value, obj.charset)
-        obj.addrs[self.__name__] = value
 
 
 def parse_fromaddr(fromaddr):
