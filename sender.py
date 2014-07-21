@@ -88,14 +88,14 @@ class Mail(object):
             messages = iter(message_or_messages)
         except TypeError:
             messages = [message_or_messages]
-        
+
         with self.connection as c:
             for message in messages:
                 if self.fromaddr and not message.fromaddr:
                     message.fromaddr = self.fromaddr
                 message.validate()
                 c.send(message)
-    
+
     def send_message(self, *args, **kwargs):
         """Shortcut for send.
         """
@@ -106,12 +106,12 @@ class Connection(object):
     """This class handles connection to the SMTP server.  Instance of this
     class would be one context manager so that you do not have to manage
     connection close manually.
-    
+
     TODO: connection pool?
 
     :param mail: one mail instance
     """
-    
+
     def __init__(self, mail):
         self.mail = mail
 
@@ -120,14 +120,14 @@ class Connection(object):
             server = smtplib.SMTP_SSL(self.mail.host, self.mail.port)
         else:
             server = smtplib.SMTP(self.mail.host, self.mail.port)
-        
+
         # Set the debug output level
         if self.mail.debug_level is not None:
             server.set_debuglevel(int(self.mail.debug_level))
 
         if self.mail.use_tls:
             server.starttls()
-        
+
         if self.mail.username and self.mail.password:
             server.login(self.mail.username, self.mail.password)
 
@@ -137,7 +137,7 @@ class Connection(object):
 
     def __exit__(self, exc_type, exc_value, exc_tb):
         self.server.quit()
-    
+
     def send(self, message):
         """Send one message instance.
 
@@ -272,7 +272,7 @@ class Message(object):
         if self.extra_headers:
             for key, value in self.extra_headers.items():
                 msg[key] = value
-        
+
         for attachment in self.attachments:
             f = MIMEBase(*attachment.content_type.split('/'))
             f.set_payload(attachment.data)
@@ -295,7 +295,7 @@ class Message(object):
             msg.attach(f)
 
         return msg.as_string()
-    
+
     def attach(self, attachment_or_attachments):
         """Adds one or a list of attachments to the message.
 
@@ -306,7 +306,7 @@ class Message(object):
         except TypeError:
             attachments = [attachment_or_attachments]
         self.attachments.extend(attachments)
-    
+
     def attach_attachment(self, *args, **kwargs):
         """Shortcut for attach.
         """
@@ -336,7 +336,7 @@ def parse_fromaddr(fromaddr):
     """Generate an RFC 822 from-address string.
 
     Simple usage::
-        
+
         >>> parse_fromaddr('from@example.com')
         'from@example.com'
         >>> parse_fromaddr(('from', 'from@example.com'))
