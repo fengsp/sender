@@ -7,14 +7,12 @@ Sender is easy
 
 .. code:: python
     
-    from sender import Mail, Message
+    from sender import Mail
 
     mail = Mail()
 
-    msg = Message("title", fromaddr="from@gmail.com")
-    msg.body = "content"
-
-    mail.send(msg)
+    mail.send_message("Hello", fromaddr="from@example.com",
+                      to="to@example.com", body="Hello world!")
 
 Install
 ```````
