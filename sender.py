@@ -76,7 +76,7 @@ class Mail(object):
     def connection(self):
         """Open one connection to the SMTP server.
         """
-        return Connection()
+        return Connection(self)
 
     def send(self, message_or_messages):
         """Sends a single messsage or multiple messages.
