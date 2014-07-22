@@ -49,7 +49,7 @@ It is possible to set ``fromaddr`` with a two-element tuple::
 
 The message could have a plain text body and(or) HTML::
     
-    msg.body = "plain text"
+    msg.body = "hello"
     msg.html = "<h1>hello</h1>"
 
 Let's construct one full message with all options::
