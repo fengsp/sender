@@ -11,7 +11,6 @@
 """
 import sys
 import unittest
-import email
 
 from sender import Mail, Message, Attachment
 from sender import SenderError
@@ -156,9 +155,11 @@ class MessageTestCase(BaseTestCase):
         self.assert_raises(SenderError, msg.validate)
         msg = Message(to='to@example.com')
         self.assert_raises(SenderError, msg.validate)
-        msg = Message(subject='subject\r')
+        msg = Message(subject='subject\r', fromaddr='from@example.com',
+                      to='to@example.com')
         self.assert_raises(SenderError, msg.validate)
-        msg = Message(subject='subject\n')
+        msg = Message(subject='subject\n', fromaddr='from@example.com',
+                      to='to@example.com')
         self.assert_raises(SenderError, msg.validate)
 
     def test_attach(self):

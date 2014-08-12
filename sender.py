@@ -218,7 +218,7 @@ class Message(object):
         # used for actual addresses store
         self.addrs = dict()
         # set address
-        self.to = to
+        self.to = to or []
         self.fromaddr = fromaddr
         self.cc = cc or []
         self.bcc = bcc or []
@@ -231,8 +231,8 @@ class Message(object):
     def validate(self):
         """Do email message validation.
         """
-        if not self.to:
-            raise SenderError("does not specify to(recipients)")
+        if not (self.to or self.cc or self.bcc):
+            raise SenderError("does not specify any recipients(to,cc,bcc)")
         if not self.fromaddr:
             raise SenderError("does not specify fromaddr(sender)")
         for c in '\r\n':
