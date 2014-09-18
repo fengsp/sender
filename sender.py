@@ -9,7 +9,7 @@
     :license: BSD, see LICENSE for more details.
 """
 
-__version__ = '0.2-dev'
+__version__ = '0.2'
 
 import sys
 import smtplib
@@ -357,7 +357,7 @@ class SenderUnicodeDecodeError(UnicodeDecodeError):
     def __str__(self):
         original = UnicodeDecodeError.__str__(self)
         return '%s. You passed in %r (%s)' % (original, self.obj,
-                type(self.obj))
+                                              type(self.obj))
 
 
 class SenderError(Exception):
