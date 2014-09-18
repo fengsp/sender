@@ -133,6 +133,9 @@ API
 .. autoclass:: Attachment
 
 
+.. include:: ../CHANGES
+
+
 Contribute
 ----------
 
