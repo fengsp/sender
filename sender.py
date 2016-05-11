@@ -5,7 +5,7 @@
 
     Python SMTP Client for Humans.
 
-    :copyright: (c) 2014 by Shipeng Feng.
+    :copyright: (c) 2016 by Shipeng Feng.
     :license: BSD, see LICENSE for more details.
 """
 
@@ -143,7 +143,8 @@ class Connection(object):
 
         :param message: one message instance.
         """
-        self.server.sendmail(message.fromaddr, message.to_addrs, str(message),
+        self.server.sendmail(message.fromaddr, message.to_addrs,
+                             str(message) if PY2 else message.as_bytes(),
                              message.mail_options, message.rcpt_options)
 
 
@@ -239,7 +240,7 @@ class Message(object):
             if self.subject and (c in self.subject):
                 raise SenderError('newline is not allowed in subject')
 
-    def __str__(self):
+    def as_string(self):
         """The message string.
         """
         if self.date is None:
@@ -282,19 +283,24 @@ class Message(object):
             else:
                 filename = force_text(attachment.filename, self.charset)
             try:
-                filename = filename.encode('ascii')
+                filename.encode('ascii')
             except UnicodeEncodeError:
-                filename = filename.encode('utf-8')
-                f.add_header('Content-Disposition', attachment.disposition,
-                             filename=('utf-8', '', filename))
-            else:
-                f.add_header('Content-Disposition', '%s;filename=%s' %
-                             (attachment.disposition, filename))
+                if PY2:
+                    filename = filename.encode('utf-8')
+                filename = ('UTF8', '', filename)
+            f.add_header('Content-Disposition', attachment.disposition,
+                         filename=filename)
             for key, value in attachment.headers.items():
                 f.add_header(key, value)
             msg.attach(f)
 
         return msg.as_string()
+
+    def as_bytes(self):
+        return self.as_string().encode(self.charset or 'utf-8')
+
+    def __str__(self):
+        return self.as_string()
 
     def attach(self, attachment_or_attachments):
         """Adds one or a list of attachments to the message.
@@ -377,7 +383,18 @@ def force_text(s, encoding='utf-8', errors='strict'):
         return s
 
     try:
-        s = s.decode(encoding, errors)
+        if not isinstance(s, string_types):
+            if not PY2:
+                if isinstance(s, bytes):
+                    s = text_type(s, encoding, errors)
+                else:
+                    s = text_type(s)
+            elif hasattr(s, '__unicode__'):
+                s = s.__unicode__()
+            else:
+                s = text_type(bytes(s), encoding, errors)
+        else:
+            s = s.decode(encoding, errors)
     except UnicodeDecodeError as e:
         if not isinstance(s, Exception):
             raise SenderUnicodeDecodeError(s, *e.args)

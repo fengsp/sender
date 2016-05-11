@@ -6,7 +6,7 @@
 
     Run tests for Sender.
 
-    :copyright: (c) 2014 by Shipeng Feng.
+    :copyright: (c) 2016 by Shipeng Feng.
     :license: BSD, see LICENSE for more details.
 """
 import sys
@@ -67,13 +67,13 @@ class BaseTestCase(unittest.TestCase):
 
 
 class MailTestCase(BaseTestCase):
-    
+
     def test_global_fromaddr(self):
         pass
 
 
 class MessageTestCase(BaseTestCase):
-    
+
     def test_subject(self):
         msg = Message('test')
         self.assert_equal(msg.subject, 'test')
@@ -87,14 +87,14 @@ class MessageTestCase(BaseTestCase):
         msg = Message(to=['to01@example.com', 'to02@example.com'])
         self.assert_equal(msg.to, set(['to01@example.com',
                                        'to02@example.com']))
-    
+
     def test_fromaddr(self):
         msg = Message(fromaddr='from@example.com', to='to@example.com')
         self.assert_equal(msg.fromaddr, 'from@example.com')
         self.assert_in('from@example.com', str(msg))
         msg = Message()
         msg.fromaddr = ('From', 'from@example.com')
-        self.assert_equal(msg.fromaddr, u'From <from@example.com>')
+        self.assert_in('<from@example.com>', str(msg))
 
     def test_cc(self):
         msg = Message(fromaddr='from@example.com', to='to@example.com',
@@ -111,11 +111,11 @@ class MessageTestCase(BaseTestCase):
                       reply_to='reply-to@example.com')
         self.assert_equal(msg.reply_to, 'reply-to@example.com')
         self.assert_in('reply-to@example.com', str(msg))
-    
+
     def test_process_address(self):
         msg = Message(fromaddr=('From\r\n', 'from\r\n@example.com'),
                       to='to\r@example.com', reply_to='reply-to\n@example.com')
-        self.assert_in('From <from@example.com>', str(msg))
+        self.assert_in('<from@example.com>', str(msg))
         self.assert_in('to@example.com', str(msg))
         self.assert_in('reply-to@example.com', str(msg))
 
@@ -124,7 +124,7 @@ class MessageTestCase(BaseTestCase):
         self.assert_equal(msg.charset, 'utf-8')
         msg = Message(charset='ascii')
         self.assert_equal(msg.charset, 'ascii')
-    
+
     def test_extra_headers(self):
         msg = Message(fromaddr='from@example.com', to='to@example.com',
                       extra_headers={'Extra-Header-Test': 'Test'})
@@ -204,21 +204,21 @@ class MessageTestCase(BaseTestCase):
 
     def test_attachment_ascii_filename(self):
         msg = Message(fromaddr='from@example.com', to='to@example.com')
-        msg.attach_attachment('my test doc.txt', 'text/plain', 'this is test')
-        self.assert_in('Content-Disposition: attachment;filename='
-                       'my test doc.txt', str(msg))
+        msg.attach_attachment('my test doc.txt', 'text/plain', b'this is test')
+        self.assert_in('Content-Disposition: attachment; filename='
+                       '"my test doc.txt"', str(msg))
 
     def test_attachment_unicode_filename(self):
         msg = Message(fromaddr='from@example.com', to='to@example.com')
         # Chinese filename :)
         msg.attach_attachment(u'我的测试文档.txt', 'text/plain',
                               'this is test')
-        self.assert_in('filename*="utf-8\'\'%E6%88%91%E7%9A%84%E6%B5%8B%E8%AF'
-                       '%95%E6%96%87%E6%A1%A3.txt"', str(msg))
+        self.assert_in('UTF8\'\'%E6%88%91%E7%9A%84%E6%B5%8B%E8%AF'
+                       '%95%E6%96%87%E6%A1%A3.txt', str(msg))
 
 
 class AttachmentTestCase(BaseTestCase):
-    
+
     def test_disposition(self):
         attach = Attachment()
         self.assert_equal(attach.disposition, 'attachment')
