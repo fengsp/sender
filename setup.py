@@ -35,7 +35,7 @@ from setuptools import setup
 
 setup(
     name='sender',
-    version='0.2',
+    version='0.3',
     url='https://github.com/fengsp/sender',
     license='BSD',
     author='Shipeng Feng',
